@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cek Akun</title>
+  <style>
+    body {
+      background-color: #1d1b3a;
+      font-family: Arial, sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      animation: fadeIn 1s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .container {
+      background-color: #1f2783;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      width: 350px;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      color: #333;
+    }
+    .note {
+      background-color: #15194f;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-family: monospace;
+    }
+    .check-button, .reset-button {
+      background: linear-gradient(to right, #3399ff, #a64dff);
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      transition: background 0.3s ease;
+    }
+    .check-button:hover, .reset-button:hover {
+      opacity: 0.9;
+    }
+    #popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.7);
+      background-color: white;
+      color: #333;
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      z-index: 1000;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      animation: popin 0.3s forwards;
+    }
+    @keyframes popin {
+      to {
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+    #popup h2 {
+      color: green;
+      margin-bottom: 20px;
+    }
+    #popup button {
+      background-color: #9d8eff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 999;
+      display: none;
+    }
+    .error {
+      color: yellow;
+      margin-top: 10px;
+    }
+    .spinner {
+      display: none;
+      margin: 15px auto;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .loading-bar {
+      width: 0%;
+      height: 8px;
+      background-color: #00ffcc;
+      margin-top: 10px;
+      border-radius: 5px;
+      transition: width 2s ease-in-out;
+      display: none;
+    }
+    footer {
+      text-align: center;
+      font-size: 14px;
+      color: #ccc;
+      margin-top: auto;
+      padding-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="input-group">
+      <label for="idAkun">ID Akun</label>
+      <input type="text" id="idAkun" placeholder="Contoh : 123456789">
+    </div>
+    <div class="input-group">
+      <label for="serverAkun">Server Akun</label>
+      <input type="text" id="serverAkun" placeholder="Contoh : 1234">
+    </div>
+    <div class="note">
+       *CATATAN : Masukkan ID dan Server terlebih dahulu untuk melanjutkan.
+    </div>
+    <button class="check-button" onclick="cekAkun()">🔍 Cek Akun</button>
+    <button class="reset-button" onclick="resetForm()">🔄 Reset</button>
+    <div class="spinner" id="spinner"></div>
+    <div class="loading-bar" id="loadingBar"></div>
+    <div class="error" id="errorMsg"></div>
+  </div>
+
+  <footer>
+    © 2025 •Oji Store cek Region. Allright Reserved•
+  </footer>
+
+  <div id="overlay"></div>
+  <div id="popup">
+    <h2>✔ Berhasil</h2>
+    <p><strong>Username :</strong> - </p>
+    <p><strong>Region Akun :</strong> <span id="region"></span></p>
+    <p><strong>Lokasi Create Akun :</strong> <span id="lokasi"></span></p>
+    <p><strong>Tanggal Create Akun :</strong> <span id="tanggal"></span></p>
+    <button onclick="tutupPopup()">OK</button>
+  </div>
+
+  <!-- Suara -->
+  <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+  <audio id="errorSound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3"></audio>
+  <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+
+  <script>
+    const lokasiList = [
+      'Jakarta', 'Bandung', 'Surabaya', 'Medan', 'Semarang', 'Yogyakarta',
+      'Makassar', 'Palembang', 'Pekanbaru', 'Denpasar', 'Balikpapan',
+      'Padang', 'Samarinda', 'Malang', 'Pontianak', 'Batam', 'Manado',
+      'Banjarmasin', 'Cirebon', 'Kupang', 'Ambon', 'Jayapura', 'Mataram'
+    ];
+
+    function cekAkun() {
+      const id = document.getElementById('idAkun').value.trim();
+      const server = document.getElementById('serverAkun').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+      const spinner = document.getElementById('spinner');
+      const loadingBar = document.getElementById('loadingBar');
+      const successSound = document.getElementById('successSound');
+      const errorSound = document.getElementById('errorSound');
+      const clickSound = document.getElementById('clickSound');
+
+      clickSound.play();
+
+      if (!/^\d{5,15}$/.test(id)) {
+        errorSound.play();
+        errorMsg.textContent = 'Masukkan ID kamu dulu berupa angka 5 sampai 12 digit.';
+        return;
+      }
+      if (!/^\d{2,6}$/.test(server)) {
+        errorSound.play();
+        errorMsg.textContent = 'Masukkan Server kamu dulu harus berupa angka 2 sampai 6 digit.';
+        return;
+      }
+
+      errorMsg.textContent = '';
+      spinner.style.display = 'block';
+      loadingBar.style.display = 'block';
+      loadingBar.style.width = '0%';
+      setTimeout(() => {
+        loadingBar.style.width = '100%';
+      }, 10);
+
+      setTimeout(() => {
+        spinner.style.display = 'none';
+        loadingBar.style.display = 'none';
+        loadingBar.style.width = '0%';
+
+        const region = 'Indonesia';
+        const randomIndex = Math.floor(Math.random() * lokasiList.length);
+        const lokasi = lokasiList[randomIndex];
+
+        const today = new Date();
+        const randomDaysAgo = Math.floor(Math.random() * 1000);
+        const createdDate = new Date(today.setDate(today.getDate() - randomDaysAgo));
+        const formattedDate = createdDate.toLocaleDateString('id-ID');
+
+        document.getElementById('region').textContent = region;
+        document.getElementById('lokasi').textContent = lokasi;
+        document.getElementById('tanggal').textContent = formattedDate;
+
+        document.getElementById('popup').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+        successSound.play();
+      }, 2000);
+    }
+
+    function tutupPopup() {
+      document.getElementById('popup').style.display = 'none';
+      document.getElementById('overlay').style.display = 'none';
+    }
+
+    function resetForm() {
+      document.getElementById('idAkun').value = '';
+      document.getElementById('serverAkun').value = '';
+      document.getElementById('errorMsg').textContent = '';
+    }
+  </script>
+</body>
+</html>
